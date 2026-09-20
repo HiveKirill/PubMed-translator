@@ -6,15 +6,15 @@ from google import genai
 # Настройка страницы
 st.set_page_config(page_title="PubMed AI", page_icon="🔬", layout="centered")
 
-# Получение API-ключа Gemini
+# Получение API-ключа Gemini из Secrets
 api_key = st.secrets.get("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("Пожалуйста, укажите GEMINI_API_KEY в настройках Streamlit Secrets!")
+    st.error("Ошибка: GEMINI_API_KEY не найден в Streamlit Secrets!")
     st.stop()
 
-# Инициализация клиента Gemini
-client = genai.Client(api_key=api_key)
+# Инициализация клиента
+client = genai.Client(api_key=str(api_key).strip().strip('"').strip("'"))
 
 def search_pubmed(query, max_results=5):
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -49,8 +49,9 @@ def translate_medical_text(text):
     Текст:
     {text}
     """
+    # Используем проверенную рабочую модель gemini-2.0-flash
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=prompt
     )
     return response.text
@@ -75,9 +76,12 @@ if 'articles' in st.session_state:
             
         if st.button(f"🌐 Перевести смыслово", key=f"btn_{item['pmid']}"):
             with st.spinner("Переводим нейросетью Gemini..."):
-                trans_title = translate_medical_text(item['title'])
-                trans_abstract = translate_medical_text(item['abstract'])
-                st.success("Перевод готов:")
-                st.markdown(f"**Заголовок:** {trans_title}")
-                st.markdown(f"**Аннотация:**\n{trans_abstract}")
+                try:
+                    trans_title = translate_medical_text(item['title'])
+                    trans_abstract = translate_medical_text(item['abstract'])
+                    st.success("Перевод готов:")
+                    st.markdown(f"**Заголовок:** {trans_title}")
+                    st.markdown(f"**Аннотация:**\n{trans_abstract}")
+                except Exception as e:
+                    st.error(f"Ошибка перевода: {e}")
         st.divider()
