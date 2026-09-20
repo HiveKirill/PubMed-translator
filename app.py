@@ -1,19 +1,20 @@
 import streamlit as st
 import requests
 import xml.etree.ElementTree as ET
-from openai import OpenAI
+from google import genai
 
 # Настройка страницы
 st.set_page_config(page_title="PubMed AI", page_icon="🔬", layout="centered")
 
-# Получение API-ключа из настроек Streamlit
-api_key = st.secrets.get("OPENAI_API_KEY")
+# Получение API-ключа Gemini
+api_key = st.secrets.get("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("Пожалуйста, укажите OPENAI_API_KEY в настройках Streamlit Secrets!")
+    st.error("Пожалуйста, укажите GEMINI_API_KEY в настройках Streamlit Secrets!")
     st.stop()
 
-client = OpenAI(api_key=api_key)
+# Инициализация клиента Gemini
+client = genai.Client(api_key=api_key)
 
 def search_pubmed(query, max_results=5):
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -48,14 +49,13 @@ def translate_medical_text(text):
     Текст:
     {text}
     """
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
     )
-    return response.choices[0].message.content
+    return response.text
 
-st.title("🔬 PubMed AI Переводчик")
+st.title("🔬 PubMed AI Переводчик (Gemini)")
 
 query = st.text_input("Введите тему исследования (на английском):", placeholder="e.g. myocarditis treatment")
 
@@ -74,7 +74,7 @@ if 'articles' in st.session_state:
             st.write(item['abstract'])
             
         if st.button(f"🌐 Перевести смыслово", key=f"btn_{item['pmid']}"):
-            with st.spinner("Переводим нейросетью..."):
+            with st.spinner("Переводим нейросетью Gemini..."):
                 trans_title = translate_medical_text(item['title'])
                 trans_abstract = translate_medical_text(item['abstract'])
                 st.success("Перевод готов:")
