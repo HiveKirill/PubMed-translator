@@ -51,7 +51,7 @@ def translate_medical_text(text):
     """
     # Используем проверенную рабочую модель gemini-2.0-flash
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-3.6-flash",
         contents=prompt
     )
     return response.text
